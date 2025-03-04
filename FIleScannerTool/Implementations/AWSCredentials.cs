@@ -1,13 +1,11 @@
-﻿using Amazon.Runtime;
-using Interfaces;
+﻿using Interfaces;
 
-namespace FIleScannerTool.Implementations
+namespace FIleScannerTool.Implementations;
+
+internal class AWSCredentials : IAWSCredentials
 {
-    internal class AWSCredentials: IAWSCredentials
-    {
-        public bool AwsS3RegionLogin { get; set; }
-        public string AwsRegion { get; set; }
-        public string AwsAccessKey { get; set; }
-        public string AwsSecretAccessKey { get; set; }
-    }
+    public bool AwsS3RegionLogin { get; set; }
+    public string AwsRegion { get; set; }
+    public string AwsAccessKey { get; set; }
+    public string AwsSecretAccessKey { get; set; }
 }

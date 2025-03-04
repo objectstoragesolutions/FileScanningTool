@@ -27,12 +27,14 @@ namespace AmazonNova
 
         public AmazonNovaClient(IAWSCredentials awsCredentials)
         {
+            Console.WriteLine($"{DateTime.Now}: Initializing AmazonNovaClient.");
             _amazonBedrockRuntimeClient = awsCredentials.AwsS3RegionLogin
                 ? new AmazonBedrockRuntimeClient(RegionEndpoint.GetBySystemName(awsCredentials.AwsRegion))
                 : new AmazonBedrockRuntimeClient(
                     awsAccessKeyId: awsCredentials.AwsAccessKey,
                     awsSecretAccessKey: awsCredentials.AwsSecretAccessKey,
                     region: RegionEndpoint.GetBySystemName(systemName: awsCredentials.AwsRegion));
+            Console.WriteLine($"{DateTime.Now}: AmazonNovaClient initialized.");
         }
 
         public bool WorkingWithImages => true;
@@ -74,6 +76,8 @@ namespace AmazonNova
 
         private ContentBlock CreateImageContentBlock(FileData fileData)
         {
+            Console.WriteLine($"{DateTime.Now}: Creating image content block for file.");
+
             return new ContentBlock
             {
                 Image = new ImageBlock
@@ -89,6 +93,8 @@ namespace AmazonNova
 
         private ContentBlock CreateDocumentContentBlock(FileData fileData)
         {
+            Console.WriteLine($"{DateTime.Now}: Creating document content block for file.");
+
             return new ContentBlock
             {
                 Document = new DocumentBlock
@@ -111,8 +117,10 @@ namespace AmazonNova
             };
         }
 
-        public ConverseRequest CreateConversionRequest(LLMApiRequest request)
+        private ConverseRequest CreateConversionRequest(LLMApiRequest request)
         {
+            Console.WriteLine($"{DateTime.Now}: Creating conversion request for AmazonNovaClient.");
+
             var converseRequest = new ConverseRequest()
             {
                 ModelId = ModelId
@@ -173,23 +181,31 @@ namespace AmazonNova
                 });
             }
 
+            Console.WriteLine($"{DateTime.Now}: Conversion request created.");
+
             return converseRequest;
         }
 
         public async Task<LLMApiResponse> CallAsync(LLMApiRequest request)
         {
+            Console.WriteLine($"{DateTime.Now}: Calling ConverseAsync in AmazonNovaClient.");
             LLMApiResponse resp = await ConverseAsync(request);
+            Console.WriteLine($"{DateTime.Now}: Received response from ConverseAsync.");
 
             return resp;
         }
 
-        public async Task<LLMApiResponse> ConverseAsync(LLMApiRequest request)
+        private async Task<LLMApiResponse> ConverseAsync(LLMApiRequest request)
         {
+            Console.WriteLine($"{DateTime.Now}: Entering ConverseAsync.");
+
             ConverseRequest conversionRequest = CreateConversionRequest(request);
             LLMApiResponse converseResponse = new LLMApiResponse();
 
             try
             {
+                Console.WriteLine($"{DateTime.Now}: Sending request to Amazon Bedrock runtime client.");
+
                 ConverseResponse conversionResponse = await _amazonBedrockRuntimeClient.ConverseAsync(conversionRequest);
                 List<ContentBlock>? responseContents = conversionResponse?.Output?.Message?.Content;
 
@@ -203,9 +219,12 @@ namespace AmazonNova
                         }
                     }
                 }
+
+                Console.WriteLine($"{DateTime.Now}: Amazon Bedrock runtime client returned response.");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"{DateTime.Now}: Exception in ConverseAsync: {ex.Message}");
                 converseResponse.Messages.Add(ex.Message);
             }
 

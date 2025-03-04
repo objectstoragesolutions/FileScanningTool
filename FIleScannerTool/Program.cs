@@ -1,53 +1,54 @@
 ﻿using Microsoft.Extensions.Configuration;
 
-namespace FIleScannerTool
+namespace FIleScannerTool;
+
+internal class Program
 {
-    internal class Program
+    static async Task Main(string[] args)
     {
-        static async Task Main(string[] args)
+        Console.WriteLine($"{DateTime.Now}: Start the process.");
+        IConfigurationRoot configuration = new ConfigurationBuilder()
+            .AddJsonFile(path: "appsettings.json", optional: false, reloadOnChange: true)
+            .AddUserSecrets<Program>()
+            .Build();
+
+        Console.WriteLine($"{DateTime.Now}: Start FileScanner initialization.");
+        FileScanner fileScanner = new(configuration);
+        CancellationTokenSource _cancellationTokenSource = new();
+
+        Console.CancelKeyPress += (sender, eventArgs) =>
         {
-            var configuration = new ConfigurationBuilder()
-             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-             .AddUserSecrets<Program>()
-             .Build();
+            Console.WriteLine($"{DateTime.Now}: Ctrl+C pressed. Cancelling...");
+            _cancellationTokenSource.Cancel();
+            eventArgs.Cancel = true;
+        };
 
-            FileScanner fileScanner = new FileScanner(configuration);
-            CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-
-            Console.CancelKeyPress += (sender, eventArgs) =>
+        Thread exitThread = new(start: () =>
+        {
+            while (true)
             {
-                Console.WriteLine("Ctrl+C pressed.  Cancelling...");
-                _cancellationTokenSource.Cancel();
-                eventArgs.Cancel = true;
-            };
-
-
-            var exitThread = new Thread(() =>
-            {
-                while (true)
+                string? input = Console.ReadLine();
+                if (!string.IsNullOrEmpty(input) && input.Equals(value: "exit", comparisonType: StringComparison.OrdinalIgnoreCase))
                 {
-                    string? input = Console.ReadLine();
-                    if (!string.IsNullOrEmpty(input) && input.Equals("exit", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Console.WriteLine("Exit command received.  Cancelling...");
-                        _cancellationTokenSource.Cancel();
-                        break;
-                    }
+                    Console.WriteLine($"{DateTime.Now}: Exit command received. Cancelling...");
+                    _cancellationTokenSource.Cancel();
+                    break;
                 }
-            });
-            exitThread.Start();
-
-            try
-            {
-                await fileScanner.ProcessFiles(_cancellationTokenSource.Token);
             }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("Operation was cancelled.");
-            }
+        });
+        exitThread.Start();
 
-            Console.WriteLine("Processing complete.");
-            exitThread.Join();
+        try
+        {
+            await fileScanner.ProcessFiles(_cancellationTokenSource.Token);
         }
+        catch (OperationCanceledException)
+        {
+            Console.WriteLine($"{DateTime.Now}: Operation was cancelled.");
+        }
+
+        Console.WriteLine($"{DateTime.Now}: Processing complete.");
+        exitThread.Join();
+        Console.WriteLine($"{DateTime.Now}: Program exiting.");
     }
 }

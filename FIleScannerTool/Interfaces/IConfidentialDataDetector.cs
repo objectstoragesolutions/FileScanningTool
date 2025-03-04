@@ -1,7 +1,6 @@
-﻿namespace FIleScannerTool.Interfaces
+﻿namespace FIleScannerTool.Interfaces;
+
+internal interface IConfidentialDataDetector
 {
-    internal interface IConfidentialDataDetector
-    {
-        Task<string> IsContainsConfidentialAsync(byte[] fileBytes, string fileKey);
-    }
+    Task<string> IsContainsConfidentialAsync(byte[] fileBytes, string fileKey);
 }
