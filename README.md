@@ -42,17 +42,17 @@ This guide outlines the steps to run a .NET console application on a Linux envir
     * Grant execute permissions to your application:
 
         ```bash
-        chmod +x YourAppName
+        chmod +x FIleScannerTool
         ```
 
-        * Replace `YourAppName` with the actual name of your executable.
+        * Replace `FIleScannerTool` with the actual name of your executable.
 
 3.  **Run the Application:**
 
     * Execute the application:
 
         ```bash
-        ./YourAppName
+        ./FIleScannerTool
         ```
 
 ## Notes
