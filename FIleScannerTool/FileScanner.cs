@@ -190,8 +190,7 @@ internal class FileScanner
     {
         Console.WriteLine($"{DateTime.Now}: Writing result for file {filePath} to CSV.");
 
-        var record = new { FilePath = filePath, ContainsConfidentialInformation = novaResult };
-        List<dynamic> records = new() { record };
+        CsvRecord record = new() { FilePath = filePath, ContainsConfidentialInformation = novaResult };
 
         bool fileExist = File.Exists(_outputCsvFilePath);
 
@@ -205,12 +204,12 @@ internal class FileScanner
 
         if (!fileExist)
         {
-            csv.WriteHeader<dynamic>();
+            csv.WriteHeader<CsvRecord>();
             await csv.NextRecordAsync();
             Console.WriteLine($"{DateTime.Now}: CSV header written.");
         }
 
-        await csv.WriteRecordsAsync(records);
+        await csv.WriteRecordsAsync(records: new List<CsvRecord> { record });
         Console.WriteLine($"{DateTime.Now}: Record for {filePath} written to CSV.");
     }
 
