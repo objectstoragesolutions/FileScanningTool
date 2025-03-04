@@ -201,6 +201,7 @@ internal class FileScanner
             share: FileShare.ReadWrite);
         using StreamWriter writer = new(stream, encoding: Encoding.UTF8);
         using CsvWriter csv = new(writer, culture: CultureInfo.InvariantCulture);
+        csv.Context.RegisterClassMap<CsvRecordMap>(); // Register the explicit mapping
 
         if (!fileExist)
         {
