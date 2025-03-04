@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="AWSSDK.Bedrock" Version="3.7.413.12" />
+		<PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.412.9" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Interfaces\Interfaces.csproj" />
+		<ProjectReference Include="..\LLMApiModels\LLMApiModels.csproj" />
+	</ItemGroup>
+
+</Project>
