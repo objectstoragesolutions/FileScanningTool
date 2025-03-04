@@ -126,7 +126,7 @@ internal class FileScanner
                     try
                     {
                         using GetObjectResponse getObjectResponse = await _s3Client.GetObjectAsync(bucketName: _bucketName, key: s3Object.Key);
-                        using MemoryStream memoryStream = new MemoryStream();
+                        using MemoryStream memoryStream = new();
                         await getObjectResponse.ResponseStream.CopyToAsync(destination: memoryStream);
                         byte[] fileBytes = memoryStream.ToArray();
                         Console.WriteLine($"{DateTime.Now}: File {s3Object.Key} downloaded successfully. Size: {fileBytes.Length} bytes.");
@@ -136,7 +136,7 @@ internal class FileScanner
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"{DateTime.Now}: Error downloading file {s3Object.Key}: {ex.Message}");
+                        Console.WriteLine($"{DateTime.Now}: Error downloading file {s3Object.Key}: {ex}. With message: {ex.Message}.");
                     }
                 }
                 else
