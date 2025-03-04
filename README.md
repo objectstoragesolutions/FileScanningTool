@@ -45,8 +45,6 @@ This guide outlines the steps to run a .NET console application on a Linux envir
         chmod +x FIleScannerTool
         ```
 
-        * Replace `FIleScannerTool` with the actual name of your executable.
-
 3.  **Run the Application:**
 
     * Execute the application:
