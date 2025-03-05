@@ -29,16 +29,28 @@ internal class FileScanner
 
     private const int _maxDegreeOfParallelism = 4;
 
+    private bool _showTrace = false;
+
+    private void WriteTrace(string message)
+    {
+        if (_showTrace)
+        {
+            Console.WriteLine($"{DateTime.Now} FileScanner: {message}");
+        }
+    }
+
     public FileScanner(IConfiguration configuration)
     {
-        Console.WriteLine($"{DateTime.Now}: Initializing FileScanner...");
+        bool.TryParse(configuration["ShowTrace"], out _showTrace);
+
+        WriteTrace("Initializing FileScanner...");
         IConfigurationSection awsConfig = configuration.GetSection(key: "AWS");
 
         _bucketName = awsConfig[key: "BucketName"] ?? throw new InvalidOperationException(message: "BucketName is required in appsettings.json");
-        Console.WriteLine($"{DateTime.Now}: BucketName: {_bucketName}.");
+        WriteTrace($"BucketName: {_bucketName}.");
 
         _outputCsvFilePath = configuration[key: "OutputCsvFilePath"] ?? "results.csv";
-        Console.WriteLine($"{DateTime.Now}: OutputCsvFilePath: {_outputCsvFilePath}.");
+        WriteTrace($"OutputCsvFilePath: {_outputCsvFilePath}.");
 
         AWSCredentials awsCredentials = new()
         {
@@ -47,7 +59,7 @@ internal class FileScanner
             AwsSecretAccessKey = configuration[key: "AwsSecretAccessKey"],
             AwsS3RegionLogin = !bool.Parse(awsConfig[key: "UseAwsAccessKey"])
         };
-        Console.WriteLine($"{DateTime.Now}: AwsRegion: {awsCredentials.AwsRegion}.");
+        WriteTrace($"AwsRegion: {awsCredentials.AwsRegion}.");
 
         if (awsCredentials.AwsS3RegionLogin)
         {
@@ -60,41 +72,41 @@ internal class FileScanner
                 awsSecretAccessKey: awsCredentials.AwsSecretAccessKey,
                 region: RegionEndpoint.GetBySystemName(systemName: awsCredentials.AwsRegion));
         }
-        Console.WriteLine($"{DateTime.Now}: Amazon S3 client initialized.");
+        WriteTrace("Amazon S3 client initialized.");
 
-        Console.WriteLine($"{DateTime.Now}: Start AmazonNovaClient initialization.");
+        WriteTrace("Start AmazonNovaClient initialization.");
         ILLMClient llmClient = new AmazonNovaClient(awsCredentials);
-        Console.WriteLine($"{DateTime.Now}: AmazonNovaClient initialized.");
+        WriteTrace("AmazonNovaClient initialized.");
 
-        Console.WriteLine($"{DateTime.Now}: Start NovaConfidentialDataDetector initialization.");
+        WriteTrace("Start NovaConfidentialDataDetector initialization.");
         _confidentialDataDetector = new NovaConfidentialDataDetector(llmClient, configuration);
-        Console.WriteLine($"{DateTime.Now}: NovaConfidentialDataDetector initialized.");
+        WriteTrace("NovaConfidentialDataDetector initialized.");
     }
 
     public async Task ProcessFiles(CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{DateTime.Now}: Loading processed files.");
+        WriteTrace("Loading processed files.");
         _processedFiles = LoadProcessedFiles();
 
-        Console.WriteLine($"{DateTime.Now}: Starting to process S3 files.");
+        WriteTrace("Starting to process S3 files.");
         await ProcessS3FilesAsync(cancellationToken);
-        Console.WriteLine($"{DateTime.Now}: Finished processing S3 files.");
+        WriteTrace("Finished processing S3 files.");
     }
 
     private async Task ProcessS3FilesAsync(CancellationToken cancellationToken)
     {
-        Console.WriteLine($"{DateTime.Now}: Entering ProcessS3FilesAsync function.");
+        WriteTrace("Entering ProcessS3FilesAsync function.");
 
         TransformBlock<string, ListObjectsV2Response> listObjectsBlock = new(
             transform: async bucket =>
             {
-                Console.WriteLine($"{DateTime.Now}: Listing objects in bucket: {bucket}.");
+                WriteTrace($"Listing objects in bucket: {bucket}.");
                 cancellationToken.ThrowIfCancellationRequested();
                 ListObjectsV2Response response = await _s3Client.ListObjectsV2Async(request: new ListObjectsV2Request
                 {
                     BucketName = bucket
                 });
-                Console.WriteLine($"{DateTime.Now}: Retrieved {response.S3Objects.Count} objects from bucket.");
+                WriteTrace($"Retrieved {response.S3Objects.Count} objects from bucket.");
 
                 return response;
             },
@@ -108,7 +120,7 @@ internal class FileScanner
         {
             cancellationToken.ThrowIfCancellationRequested();
             IEnumerable<S3Object> filtered = response.S3Objects.Where(s3Object => !_processedFiles.Contains(s3Object.Key));
-            Console.WriteLine($"{DateTime.Now}: Filtered objects: {filtered.Count()} objects to process.");
+            WriteTrace($"Filtered objects: {filtered.Count()} objects to process.");
 
             return filtered;
         });
@@ -117,7 +129,7 @@ internal class FileScanner
             transform: async s3Object =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                Console.WriteLine($"{DateTime.Now}: Processing file: {s3Object.Key}.");
+                WriteTrace($"Processing file: {s3Object.Key}.");
 
                 string fileResult = "false";
 
@@ -129,19 +141,19 @@ internal class FileScanner
                         using MemoryStream memoryStream = new();
                         await getObjectResponse.ResponseStream.CopyToAsync(destination: memoryStream);
                         byte[] fileBytes = memoryStream.ToArray();
-                        Console.WriteLine($"{DateTime.Now}: File {s3Object.Key} downloaded successfully. Size: {fileBytes.Length} bytes.");
+                        WriteTrace($"File {s3Object.Key} downloaded successfully. Size: {fileBytes.Length} bytes.");
 
                         fileResult = await SendToNovaAsync(fileBytes, fileKey: s3Object.Key);
-                        Console.WriteLine($"{DateTime.Now}: Nova result for file {s3Object.Key}: {fileResult}.");
+                        WriteTrace($"Nova result for file {s3Object.Key}: {fileResult}.");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"{DateTime.Now}: Error downloading file {s3Object.Key}: {ex}. With message: {ex.Message}.");
+                        WriteTrace($"Error downloading file {s3Object.Key}: {ex}. With message: {ex.Message}.");
                     }
                 }
                 else
                 {
-                    Console.WriteLine($"{DateTime.Now}: Skipping directory: {s3Object.Key}.");
+                    WriteTrace($"Skipping directory: {s3Object.Key}.");
                 }
 
                 return (FilePath: s3Object.Key, NovaResult: fileResult);
@@ -154,7 +166,7 @@ internal class FileScanner
                 cancellationToken.ThrowIfCancellationRequested();
                 await WriteResultToCsvAsync(result.FilePath, result.NovaResult);
                 _processedFiles.Add(result.FilePath);
-                Console.WriteLine($"{DateTime.Now}: Processed file: {result.FilePath}, Nova result: {result.NovaResult}.");
+                WriteTrace($"Processed file: {result.FilePath}, Nova result: {result.NovaResult}.");
             },
             dataflowBlockOptions: new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = 1 });
 
@@ -172,15 +184,15 @@ internal class FileScanner
     {
         try
         {
-            Console.WriteLine($"{DateTime.Now}: Sending file {fileKey} to Nova for confidential check.");
+            WriteTrace($"Sending file {fileKey} to Nova for confidential check.");
             string result = await _confidentialDataDetector.IsContainsConfidentialAsync(fileBytes, fileKey);
-            Console.WriteLine($"{DateTime.Now}: Received response from Nova for file {fileKey}: {result}.");
+            Console.WriteLine($"Received response from Nova for file {fileKey}: {result}.");
 
             return result;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"{DateTime.Now}: Error communicating with Nova for {fileKey}: {ex.Message}");
+            Console.WriteLine($"Error communicating with Nova for {fileKey}: {ex.Message}");
 
             return "error";
         }
@@ -188,7 +200,7 @@ internal class FileScanner
 
     private async Task WriteResultToCsvAsync(string filePath, string novaResult)
     {
-        Console.WriteLine($"{DateTime.Now}: Writing result for file {filePath} to CSV.");
+        WriteTrace($"Writing result for file {filePath} to CSV.");
 
         CsvRecord record = new() { FilePath = filePath, ContainsConfidentialInformation = novaResult };
 
@@ -200,25 +212,22 @@ internal class FileScanner
             access: FileAccess.Write,
             share: FileShare.ReadWrite);
         using StreamWriter writer = new(stream, encoding: Encoding.UTF8);
-        using CsvWriter csv = new(writer, culture: CultureInfo.InvariantCulture);
-        csv.Context.RegisterClassMap<CsvRecordMap>(); // Register the explicit mapping
 
         if (!fileExist)
         {
-            csv.WriteHeader<CsvRecord>();
-            await csv.NextRecordAsync();
-            Console.WriteLine($"{DateTime.Now}: CSV header written.");
+            await writer.WriteLineAsync("FilePath, ContainsConfidentialInformation");
+            WriteTrace($"CSV header written.");
         }
 
-        await csv.WriteRecordsAsync(records: new List<CsvRecord> { record });
-        Console.WriteLine($"{DateTime.Now}: Record for {filePath} written to CSV.");
+        await writer.WriteLineAsync($"{record.FilePath}, {record.ContainsConfidentialInformation}");
+        WriteTrace($"Record for {filePath} written to CSV.");
     }
 
     private HashSet<string> LoadProcessedFiles()
     {
-        Console.WriteLine($"{DateTime.Now}: Starting LoadProcessedFiles function.");
+        WriteTrace($"Starting LoadProcessedFiles function.");
         bool exist = File.Exists(path: _outputCsvFilePath);
-        Console.WriteLine($"{DateTime.Now}: CSV file exists: {exist}.");
+        WriteTrace($"CSV file exists: {exist}.");
 
         HashSet<string> processedFiles = new();
         if (exist)
@@ -237,12 +246,12 @@ internal class FileScanner
                 }
                 catch (CsvHelper.MissingFieldException)
                 {
-                    Console.WriteLine($"{DateTime.Now}: Warning: A row in the CSV is missing the 'FilePath' field.");
+                    WriteTrace($"Warning: A row in the CSV is missing the 'FilePath' field.");
                 }
             }
         }
 
-        Console.WriteLine($"{DateTime.Now}: Loaded {processedFiles.Count} processed files.");
+        WriteTrace($"Loaded {processedFiles.Count} processed files.");
 
         return processedFiles;
     }

@@ -23,7 +23,8 @@ namespace AmazonNova
         private const string ContentTypeImageJpeg = "image/jpeg";
         private const string ContentTypeImageJpg = "image/jpg";
         private const string ContentTypeImageGif = "image/gif";
-        private const string ContentTypePdf = "application/pdf";
+
+
 
         public AmazonNovaClient(IAWSCredentials awsCredentials)
         {
@@ -50,7 +51,21 @@ namespace AmazonNova
         {
             switch (contentType)
             {
-                case ContentTypePdf:
+                case "application/msword":
+                    return DocumentFormat.Doc;
+                case "application/vnd.ms-excel":
+                    return DocumentFormat.Xls;
+                case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                    return DocumentFormat.Docx;
+                case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                    return DocumentFormat.Xlsx;
+                case "text/plain":
+                    return DocumentFormat.Txt;
+                case "text/html":
+                    return DocumentFormat.Html;
+                case "text/csv":
+                    return DocumentFormat.Csv;
+                case "application/pdf":
                     return DocumentFormat.Pdf;
                 default:
                     return DocumentFormat.Pdf;
@@ -221,6 +236,12 @@ namespace AmazonNova
                 }
 
                 Console.WriteLine($"{DateTime.Now}: Amazon Bedrock runtime client returned response.");
+            }
+            catch (ValidationException ex)
+            {
+                Console.WriteLine($"{DateTime.Now}: ValidationException in ConverseAsync: {ex.Message}");
+                converseResponse.Messages.Add("Unknown");
+                converseResponse.Messages.Add(ex.Message);
             }
             catch (Exception ex)
             {

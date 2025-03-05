@@ -1,12 +1,12 @@
-﻿using CsvHelper.Configuration;
+﻿//using CsvHelper.Configuration;
 
-namespace FIleScannerTool;
+//namespace FIleScannerTool;
 
-public class CsvRecordMap : ClassMap<CsvRecord>
-{
-    public CsvRecordMap()
-    {
-        Map(m => m.FilePath).Name("FilePath");
-        Map(m => m.ContainsConfidentialInformation).Name("ContainsConfidentialInformation");
-    }
-}
+//public class CsvRecordMap : ClassMap<CsvRecord>
+//{
+//    public CsvRecordMap()
+//    {
+//        Map(m => m.FilePath).Name("FilePath");
+//        Map(m => m.ContainsConfidentialInformation).Name("ContainsConfidentialInformation");
+//    }
+//}
