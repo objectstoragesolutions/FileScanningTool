@@ -27,7 +27,7 @@ internal class FileScanner
     private readonly IAmazonS3 _s3Client;
     private readonly string _bucketName;
 
-    private const int _maxDegreeOfParallelism = 4;
+    private const int _maxDegreeOfParallelism = 1;
     private bool _showTrace = false;
 
     private void WriteTrace(string message)
