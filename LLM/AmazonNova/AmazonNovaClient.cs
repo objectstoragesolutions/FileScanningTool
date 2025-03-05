@@ -24,8 +24,6 @@ namespace AmazonNova
         private const string ContentTypeImageJpg = "image/jpg";
         private const string ContentTypeImageGif = "image/gif";
 
-
-
         public AmazonNovaClient(IAWSCredentials awsCredentials)
         {
             Console.WriteLine($"{DateTime.Now}: Initializing AmazonNovaClient.");
@@ -136,7 +134,7 @@ namespace AmazonNova
         {
             Console.WriteLine($"{DateTime.Now}: Creating conversion request for AmazonNovaClient.");
 
-            var converseRequest = new ConverseRequest()
+            ConverseRequest converseRequest = new ConverseRequest()
             {
                 ModelId = ModelId
             };

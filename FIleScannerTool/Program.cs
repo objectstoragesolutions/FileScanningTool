@@ -9,7 +9,7 @@ internal class Program
     static async Task Main(string[] args)
     {
         // Register the checksum provider for Native AOT builds.
-        Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.Instance.RegisterChecksumProvider(new CrtChecksums());
+        Amazon.RuntimeDependencies.GlobalRuntimeDependencyRegistry.Instance.RegisterChecksumProvider(instance: new CrtChecksums());
 
         Console.WriteLine($"{DateTime.Now}: Start the process.");
         IConfigurationRoot configuration = new ConfigurationBuilder()

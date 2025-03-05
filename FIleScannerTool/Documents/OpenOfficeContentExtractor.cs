@@ -1,9 +1,9 @@
 ﻿using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Spreadsheet;
-using DocumentFormat.OpenXml.Wordprocessing;
+
 using Microsoft.Extensions.Configuration;
+
 using System.Text;
-using Text = DocumentFormat.OpenXml.Spreadsheet.Text;
 
 namespace FIleScannerTool.Documents
 {
@@ -26,7 +26,7 @@ namespace FIleScannerTool.Documents
 
         public byte[] ExtractTextFromDocxBytes(byte[] fileBytes)
         {
-            StringBuilder text = new StringBuilder();
+            StringBuilder text = new();
 
             try
             {
@@ -35,11 +35,10 @@ namespace FIleScannerTool.Documents
                 {
                     if (doc.MainDocumentPart != null && doc.MainDocumentPart.Document != null)
                     {
-                        var innerText = doc.MainDocumentPart.Document.Body.InnerText;
+                        string innerText = doc.MainDocumentPart.Document.Body.InnerText;
                         text.Append(innerText);
                     }
                 }
-
             }
             catch (Exception ex)
             {
@@ -51,7 +50,7 @@ namespace FIleScannerTool.Documents
 
         public byte[] ExtractTextFromXlsxBytes(byte[] fileBytes)
         {
-            StringBuilder text = new StringBuilder();
+            StringBuilder text = new();
 
             try
             {
@@ -75,9 +74,11 @@ namespace FIleScannerTool.Documents
                                     SharedStringTablePart stringTablePart = workbookPart.SharedStringTablePart;
                                     cellValue = stringTablePart.SharedStringTable.Elements<SharedStringItem>().ElementAt(int.Parse(cellValue)).InnerText;
                                 }
+
                                 text.Append(cellValue + " ");
                             }
                         }
+
                         text.AppendLine();
                     }
                 }
@@ -92,11 +93,12 @@ namespace FIleScannerTool.Documents
 
         public static byte[] ConvertStringToByteArray(string text)
         {
-            using (MemoryStream stream = new MemoryStream())
-            using (StreamWriter writer = new StreamWriter(stream))
+            using (MemoryStream stream = new())
+            using (StreamWriter writer = new(stream))
             {
                 writer.Write(text);
                 writer.Flush();
+
                 return stream.ToArray();
             }
         }

@@ -28,7 +28,6 @@ internal class FileScanner
     private readonly string _bucketName;
 
     private const int _maxDegreeOfParallelism = 4;
-
     private bool _showTrace = false;
 
     private void WriteTrace(string message)
@@ -72,6 +71,7 @@ internal class FileScanner
                 awsSecretAccessKey: awsCredentials.AwsSecretAccessKey,
                 region: RegionEndpoint.GetBySystemName(systemName: awsCredentials.AwsRegion));
         }
+
         WriteTrace("Amazon S3 client initialized.");
 
         WriteTrace("Start AmazonNovaClient initialization.");

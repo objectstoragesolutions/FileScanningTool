@@ -14,6 +14,7 @@ internal class NovaConfidentialDataDetector : IConfidentialDataDetector
 
     private string _instruction { get; set; } = "Please check the document for confidential information. Response only 'True' or 'False' without any details.";
     private bool _showTrace;
+
     private void WriteTrace(string message)
     {
         if (_showTrace)
@@ -43,38 +44,25 @@ internal class NovaConfidentialDataDetector : IConfidentialDataDetector
 
     private string GetContentType(string fileKey)
     {
-        var extension = Path.GetExtension(fileKey);
-        switch (extension)
+        string extension = Path.GetExtension(fileKey);
+        return extension switch
         {
-            case ".doc":
-                return "application/msword";
-            case ".xls":
-                return "application/vnd.ms-excel";
-            case ".docx":
-                return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-            case ".xlsx":
-                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-            case ".txt":
-            case ".json":
-            case ".jsonl":
-                return "text/plain";
-            case ".html":
-            case ".htm":
-                return "text/html";
-            case ".csv":
-                return "text/csv";
-            case ".pdf":
-                return "application/pdf";
-            default:
-                return "application/pdf";
-        }
+            ".doc" => "application/msword",
+            ".xls" => "application/vnd.ms-excel",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".txt" or ".json" or ".jsonl" => "text/plain",
+            ".html" or ".htm" => "text/html",
+            ".csv" => "text/csv",
+            ".pdf" => "application/pdf",
+            _ => "application/pdf",
+        };
     }
-
 
     bool ConvertToTextFileIfNecessary(byte[] bytes, string fileKey, out byte[] textFileBytes)
     {
-        var extension = Path.GetExtension(fileKey);
-        OpenOfficeContentExtractor contentExtractor = new OpenOfficeContentExtractor(_configuration);
+        string extension = Path.GetExtension(path: fileKey);
+        OpenOfficeContentExtractor contentExtractor = new(configuration: _configuration);
         switch (extension)
         {
             case ".docx":
@@ -93,12 +81,11 @@ internal class NovaConfidentialDataDetector : IConfidentialDataDetector
     {
         WriteTrace($"Processing file: {fileKey}");
 
-        if(ConvertToTextFileIfNecessary(fileBytes, fileKey, out byte[] textFileBytes))
+        if (ConvertToTextFileIfNecessary(fileBytes, fileKey, out byte[] textFileBytes))
         {
             fileBytes = textFileBytes;
             fileKey = fileKey.Replace(Path.GetExtension(fileKey), ".txt");
         }
-
 
         LLMApiRequest llmApiRequest = new();
 
@@ -112,7 +99,7 @@ internal class NovaConfidentialDataDetector : IConfidentialDataDetector
 
         userMessage.Content.Images = new List<FileData>()
         {
-            new FileData()
+            new()
             {
                 Data = fileBytes,
                 ContentType = GetContentType(fileKey)
@@ -123,7 +110,7 @@ internal class NovaConfidentialDataDetector : IConfidentialDataDetector
 
         LLMApiResponse llmApiResponse = await _llmClient.CallAsync(llmApiRequest);
 
-        string textResponse = llmApiResponse.Messages.FirstOrDefault();
+        string textResponse = llmApiResponse.Messages.FirstOrDefault() ?? "Null";
 
         if (string.IsNullOrEmpty(textResponse))
         {
@@ -134,15 +121,6 @@ internal class NovaConfidentialDataDetector : IConfidentialDataDetector
         if (llmApiResponse.Messages.Count > 1)
         {
             WriteTrace($"Received exception: {textResponse} for file: {fileKey}");
-        }
-
-        var words = textResponse
-            .Replace("\r\n", " ")
-            .Replace("\n", " ")
-            .Split(" ").ToList();
-        if (words.Count > 1)
-        {
-            textResponse = words[0];
         }
 
         if (bool.TryParse(textResponse, out bool hasConfidentialInformation))
